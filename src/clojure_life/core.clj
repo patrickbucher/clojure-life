@@ -1,7 +1,41 @@
 (ns clojure-life.core
   (:gen-class))
 
-(def neighbours
+(defn as-2d-vec [grid] (vec (map vec grid)))
+
+(defn new-grid
+  "Creates a two-dimensional vector with defined rows and cols; all values set to value."
+  [rows cols value]
+  (when (and (>= rows 0) (>= cols 0))
+    (as-2d-vec (partition cols (take (* rows cols) (repeat value))))))
+
+(defn in-range?
+  "Checks whether or not the given row/col index is within the grid's limits."
+  [grid row col]
+  (and (>= row 0) (>= col 0) (< row (count grid)) (< col (count (get grid 0)))))
+
+(defn get-at
+  "Gets the state at the index row/col of the grid."
+  [grid row col]
+  (when (in-range? grid row col)
+    (get (get grid row) col)))
+
+(defn set-at
+  "Sets state at the index row/col of the grid."
+  [grid row col state]
+  (if (in-range? grid row col)
+    (assoc grid row (assoc (get grid row) col state))
+    grid))
+
+(defn coords-of
+  "Creates a two-dimensional vector of indices (row/col pairs)."
+  [grid]
+  (let [rows (count grid)
+        cols (count (get grid 0))]
+    (as-2d-vec (partition cols (for [r (range rows) c (range cols)] [r c])))))
+
+(def directions
+  "The 8 directions (horizontal, vertical, diagonal neighbours)."
   {:north [-1 0]
    :north-east [-1 1]
    :east [0 1]
@@ -11,29 +45,50 @@
    :west [0 -1]
    :north-west [-1 -1]})
 
-(defn create-grid
-  "Creates a two-dimensional vector with defined rows and cols; all values set to value."
-  [rows cols value]
-  (when (and (>= rows 0) (>= cols 0))
-    (into [] (take rows (repeat (into [] (take cols (repeat value))))))))
-
-(defn is-in-range
-  "Checks whether or not the given row/col index is within the grid's limits."
+(defn neighbours-of
+  "Returns the neighbour coordinates of the give cell."
   [grid row col]
-  (and (>= row 0) (>= col 0) (< row (count grid)) (< col (count (get grid 0)))))
+  (let [rows (count grid)
+        cols (count (get grid 0))]
+    (map (fn [[dr dc]]
+           (let [nr (mod (+ row dr) rows)
+                 nc (mod (+ col dc) cols)]
+             [(if (neg? nr) (dec rows) nr)
+              (if (neg? nc) (dec cols) nc)]))
+         (vals directions))))
 
-(defn get-at
-  "Gets the state at the index row/col of the grid."
+(defn neighbour-vals-of
+  "Gets the values of the neighbours of the given cell."
   [grid row col]
-  (when (is-in-range grid row col)
-    (get (get grid row) col)))
+  (let [neighbours (neighbours-of grid row col)]
+    (map (fn [[r c]] (get-at grid r c)) neighbours)))
 
-(defn set-at
-  "Sets state at the index row/col of the grid."
-  [grid row col state]
-  (if (is-in-range grid row col)
-    (assoc grid row (assoc (get grid row) col state))
-    grid))
+(defn neighbours-alive
+  "Counts the number of alive neighbours of the given cell."
+  [grid row col alive-state]
+  (count (filter (fn [state] (= state alive-state)) (neighbour-vals-of grid row col))))
+
+(defn next-state
+  "Computes the next state of an individual cell."
+  [grid row col alive-state dead-state]
+  (let [state (get-at grid row col)
+        n-alive (neighbours-alive grid row col alive-state)]
+    (if (= state alive-state)
+      (cond
+        (<= 2 n-alive 3) alive-state
+        (< n-alive 2) dead-state
+        (> n-alive 3) dead-state)
+      (if (= n-alive 3) alive-state dead-state))))
+
+(defn next-generation
+  "Computes the next generation as a two-dimensional vector."
+  [grid alive-state dead-state]
+  (let [rows (count grid)
+        cols (count (get grid 0))
+        cds (apply concat (coords-of grid))
+        new (new-grid rows cols dead-state)]
+    (as-2d-vec
+     (partition cols (map (fn [[r c]] (next-state grid r c alive-state dead-state)) cds)))))
 
 (defn print-row
   "Prints a single row; cols separated by space."
@@ -52,13 +107,18 @@
     (when (< r rows)
       (print-row (get grid r))
       (print "\n")
-      (recur (inc r) rows))))
+      (recur (inc r) rows)))
+  (println))
 
-;; TODO: count neighbours
-;; TODO: compute next generation
+(defn add-glider
+  "Adds a glider to the top-left corner."
+  [grid alive-state]
+  (set-at (set-at (set-at (set-at (set-at grid 0 0 alive-state) 1 1 alive-state) 2 0 alive-state) 2 1 alive-state) 2 2 alive-state))
 
 (defn -main
   "Prints a grid of 8x8."
-  ;; TODO: get args from command line
   [& args]
-  (print-grid (create-grid 8 8 "_")))
+  (loop [grid (add-glider (new-grid 32 64 "_") "x")]
+    (print-grid grid)
+    (Thread/sleep 2000)
+    (recur (next-generation grid "x" "_"))))
