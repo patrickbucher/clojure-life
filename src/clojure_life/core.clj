@@ -111,10 +111,25 @@
   [grid alive-state]
   (set-at (set-at (set-at (set-at (set-at grid 1 2 alive-state) 2 3 alive-state) 3 1 alive-state) 3 2 alive-state) 3 3 alive-state))
 
+(defn add-f-pentomino
+  "Adds an f-Pentomino roughly into the middle of the grid."
+  [grid alive-state]
+  (let [rows (count grid)
+        cols (count (get grid 0))
+        pent [[false true true]
+              [true true false]
+              [false true false]]
+        midr (/ rows 2)
+        midc (/ cols 2)
+        activate-rel-cds (filter (fn [[r c]] (get-at pent r c)) (coords-of pent))
+        activate-abs-cds (map (fn [[r c]] [(+ r midr) (+ c midc)]) activate-rel-cds)]
+    (println activate-rel-cds)))
+;    (apply (fn [[r c]] (set-at grid r c alive-state)) activate-abs-cds)))
+
 (defn -main
   "Runs the simulation."
   [& args]
-  (loop [grid (add-glider (new-grid 64 64 "_") "x")]
+  (loop [grid (add-f-pentomino (add-glider (new-grid 64 64 "_") "x") "x")]
     (print-grid grid)
     (Thread/sleep 250)
     (recur (next-generation grid "x" "_"))))
