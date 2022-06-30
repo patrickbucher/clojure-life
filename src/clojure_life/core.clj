@@ -74,10 +74,7 @@
   (let [state (get-at grid row col)
         n-alive (neighbours-alive grid row col alive-state)]
     (if (= state alive-state)
-      (cond
-        (<= 2 n-alive 3) alive-state
-        (< n-alive 2) dead-state
-        (> n-alive 3) dead-state)
+      (if (<= 2 n-alive 3) alive-state dead-state)
       (if (= n-alive 3) alive-state dead-state))))
 
 (defn next-generation
@@ -85,8 +82,7 @@
   [grid alive-state dead-state]
   (let [rows (count grid)
         cols (count (get grid 0))
-        cds (apply concat (coords-of grid))
-        new (new-grid rows cols dead-state)]
+        cds (apply concat (coords-of grid))]
     (as-2d-vec
      (partition cols (map (fn [[r c]] (next-state grid r c alive-state dead-state)) cds)))))
 
@@ -111,14 +107,14 @@
   (println))
 
 (defn add-glider
-  "Adds a glider to the top-left corner."
+  "Adds a glider one off the top-left corner."
   [grid alive-state]
-  (set-at (set-at (set-at (set-at (set-at grid 0 0 alive-state) 1 1 alive-state) 2 0 alive-state) 2 1 alive-state) 2 2 alive-state))
+  (set-at (set-at (set-at (set-at (set-at grid 1 2 alive-state) 2 3 alive-state) 3 1 alive-state) 3 2 alive-state) 3 3 alive-state))
 
 (defn -main
   "Runs the simulation."
   [& args]
-  (loop [grid (add-glider (new-grid 32 64 "_") "x")]
+  (loop [grid (add-glider (new-grid 64 64 "_") "x")]
     (print-grid grid)
-    (Thread/sleep 2000)
+    (Thread/sleep 250)
     (recur (next-generation grid "x" "_"))))
