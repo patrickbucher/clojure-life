@@ -46,7 +46,7 @@
    :north-west [-1 -1]})
 
 (defn neighbours-of
-  "Returns the neighbour coordinates of the give cell."
+  "Returns the neighbour coordinates of the given cell."
   [grid row col]
   (let [rows (count grid)
         cols (count (get grid 0))]
@@ -116,7 +116,7 @@
   (set-at (set-at (set-at (set-at (set-at grid 0 0 alive-state) 1 1 alive-state) 2 0 alive-state) 2 1 alive-state) 2 2 alive-state))
 
 (defn -main
-  "Prints a grid of 8x8."
+  "Runs the simulation."
   [& args]
   (loop [grid (add-glider (new-grid 32 64 "_") "x")]
     (print-grid grid)
