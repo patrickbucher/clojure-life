@@ -106,29 +106,34 @@
       (recur (inc r) rows)))
   (println))
 
+(defn place-object
+  [grid obj row-offset col-offset alive-state]
+  (let [rows (count grid)
+        cols (count (get grid 0))
+        activate-rel (filter (fn [rc] (get-in obj rc)) (apply concat (coords-of obj)))
+        activate-abs (map (fn [[r c]] [(+ r row-offset) (+ c col-offset)]) activate-rel)]
+    (reduce (fn [g rc] (assoc-in g rc alive-state)) grid activate-abs)))
+
 (defn add-glider
   "Adds a glider one off the top-left corner."
   [grid alive-state]
-  (set-at (set-at (set-at (set-at (set-at grid 1 2 alive-state) 2 3 alive-state) 3 1 alive-state) 3 2 alive-state) 3 3 alive-state))
+  (place-object grid [[false true false]
+                      [false false true]
+                      [true true true]]
+                0 0 "x"))
 
 (defn add-f-pentomino
   "Adds an f-Pentomino roughly into the middle of the grid."
   [grid alive-state]
-  (let [rows (count grid)
-        cols (count (get grid 0))
-        pent [[false true true]
-              [true true false]
-              [false true false]]
-        midr (/ rows 2)
-        midc (/ cols 2)
-        activate-rel-cds (filter (fn [[r c]] (get-at pent r c)) (apply concat (coords-of pent)))
-        activate-abs-cds (map (fn [[r c]] [(+ r midr) (+ c midc)]) activate-rel-cds)]
-    (reduce (fn [g rc] (assoc-in g rc alive-state)) grid activate-abs-cds)))
+  (place-object grid [[false true true]
+                      [true true false]
+                      [false true false]]
+                16 32 "x"))
 
 (defn -main
   "Runs the simulation."
   [& args]
-  (loop [grid (add-f-pentomino (add-glider (new-grid 64 64 "_") "x") "x")]
+  (loop [grid (add-f-pentomino (add-glider (new-grid 32 64 "_") "x") "x")]
     (print-grid grid)
-    (Thread/sleep 250)
+    (Thread/sleep 100)
     (recur (next-generation grid "x" "_"))))
