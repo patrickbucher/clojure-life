@@ -121,10 +121,9 @@
               [false true false]]
         midr (/ rows 2)
         midc (/ cols 2)
-        activate-rel-cds (filter (fn [[r c]] (get-at pent r c)) (coords-of pent))
+        activate-rel-cds (filter (fn [[r c]] (get-at pent r c)) (apply concat (coords-of pent)))
         activate-abs-cds (map (fn [[r c]] [(+ r midr) (+ c midc)]) activate-rel-cds)]
-    (println activate-rel-cds)))
-;    (apply (fn [[r c]] (set-at grid r c alive-state)) activate-abs-cds)))
+    (reduce (fn [g rc] (assoc-in g rc alive-state)) grid activate-abs-cds)))
 
 (defn -main
   "Runs the simulation."
