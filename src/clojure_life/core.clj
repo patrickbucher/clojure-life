@@ -9,23 +9,11 @@
   (when (and (>= rows 0) (>= cols 0))
     (as-2d-vec (partition cols (take (* rows cols) (repeat value))))))
 
+;; TODO: in-range? as multimethod that takes an optional object with offsets
 (defn in-range?
   "Checks whether or not the given row/col index is within the grid's limits."
   [grid row col]
   (and (>= row 0) (>= col 0) (< row (count grid)) (< col (count (get grid 0)))))
-
-(defn get-at
-  "Gets the state at the index row/col of the grid."
-  [grid row col]
-  (when (in-range? grid row col)
-    (get (get grid row) col)))
-
-(defn set-at
-  "Sets state at the index row/col of the grid."
-  [grid row col state]
-  (if (in-range? grid row col)
-    (assoc grid row (assoc (get grid row) col state))
-    grid))
 
 (defn coords-of
   "Creates a two-dimensional vector of indices (row/col pairs)."
@@ -61,7 +49,7 @@
   "Gets the values of the neighbours of the given cell."
   [grid row col]
   (let [neighbours (neighbours-of grid row col)]
-    (map (fn [[r c]] (get-at grid r c)) neighbours)))
+    (map (fn [rc] (get-in grid rc)) neighbours)))
 
 (defn neighbours-alive
   "Counts the number of alive neighbours of the given cell."
@@ -71,7 +59,7 @@
 (defn next-state
   "Computes the next state of an individual cell."
   [grid row col alive-state dead-state]
-  (let [state (get-at grid row col)
+  (let [state (get-in grid [row col])
         n-alive (neighbours-alive grid row col alive-state)]
     (if (= state alive-state)
       (if (<= 2 n-alive 3) alive-state dead-state)
